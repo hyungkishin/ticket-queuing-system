@@ -2,6 +2,7 @@ package com.ticket.targetwebsite;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @SpringBootApplication
 public class TargetWebsiteApplication {
@@ -10,4 +11,8 @@ public class TargetWebsiteApplication {
         SpringApplication.run(TargetWebsiteApplication.class, args);
     }
 
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
 }
