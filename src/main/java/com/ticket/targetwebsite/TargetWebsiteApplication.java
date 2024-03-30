@@ -2,17 +2,50 @@ package com.ticket.targetwebsite;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 
 @SpringBootApplication
+@Controller
 public class TargetWebsiteApplication {
+
+    RestTemplate restTemplate = new RestTemplate();
 
     public static void main(String[] args) {
         SpringApplication.run(TargetWebsiteApplication.class, args);
     }
 
     @GetMapping("/")
-    public String index() {
+    public String index(@RequestParam(name = "queue", defaultValue = "default") String queue,
+                        @RequestParam(name = "user_id") Long userId) {
+        var uri = UriComponentsBuilder
+                .fromHttpUrl("http://127.0.0.1:9010")
+                .path("/api/v1/queue/allowed")
+                .queryParam("queue", queue)
+                .queryParam("user_id", userId)
+                .encode()
+                .build()
+                .toUri();
+
+        ResponseEntity<AllowedUserResponse> response = restTemplate.getForEntity(uri, AllowedUserResponse.class);
+
+        if (response.getBody() == null || !response.getBody().allowed()) {
+            // 대기 웹 페이지로부터 리다이렉트
+            return "redirect:http://127.0.0.1:9010/waiting-room?user_id=%d&redirect_url=%s"
+                    .formatted(userId, "http://127.0.0.1:9000?user_id=%d".formatted(userId));
+        }
+
+        // 허용 상태라면 해당 페이지를 진입
         return "index";
     }
+
+    public record AllowedUserResponse(Boolean allowed) {
+    }
+
 }
