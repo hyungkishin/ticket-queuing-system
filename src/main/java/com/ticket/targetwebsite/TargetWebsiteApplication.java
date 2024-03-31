@@ -1,5 +1,7 @@
 package com.ticket.targetwebsite;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.Arrays;
 
 @SpringBootApplication
 @Controller
@@ -23,12 +26,25 @@ public class TargetWebsiteApplication {
 
     @GetMapping("/")
     public String index(@RequestParam(name = "queue", defaultValue = "default") String queue,
-                        @RequestParam(name = "user_id") Long userId) {
+                        @RequestParam(name = "user_id") Long userId,
+                        HttpServletRequest request) {
+
+        var cookies = request.getCookies();
+        var cookieName = "user-queue-%s-token".formatted(queue);
+
+        var token = "";
+
+        if (cookies != null) {
+            var cookie = Arrays.stream(cookies).filter(i -> i.getName().equalsIgnoreCase(cookieName)).findFirst();
+            token = cookie.orElse(new Cookie(cookieName, "")).getValue();
+        }
+
         var uri = UriComponentsBuilder
                 .fromHttpUrl("http://127.0.0.1:9010")
                 .path("/api/v1/queue/allowed")
                 .queryParam("queue", queue)
                 .queryParam("user_id", userId)
+                .queryParam("token", token)
                 .encode()
                 .build()
                 .toUri();
